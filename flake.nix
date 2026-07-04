@@ -20,7 +20,7 @@
       {
         devShells.default = pkgs.mkShell {
           nativeBuildInputs = with pkgs; [
-            nodejs_25
+            nodejs_26
             pnpm
             openssl
             pkg-config
