@@ -49,6 +49,7 @@ export const sendBulkEmailSchema = z.object({
   invitationIds: z
     .array(z.string().cuid())
     .min(1, "Please select at least one invite"),
+  customHtmlTemplate: z.string().optional(),
 });
 
 export type SendBulkEmailInput = z.infer<typeof sendBulkEmailSchema>;

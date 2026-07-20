@@ -1,11 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import { SendBulkEmailInput } from "../schemas/invite.schema";
-import { emailTransporter, GenerateInviteEmailHtml } from "@/lib/mailer";
+import {
+  emailTransporter,
+  GenerateInviteEmailHtml,
+  GenerateQrCodeDataUri,
+} from "@/lib/mailer";
 
 export async function SendBulkEmails(params: SendBulkEmailInput) {
-  const { invitationIds } = params;
+  const { invitationIds, customHtmlTemplate } = params;
 
-  // 1. Fetch invites that actually have an email attached, including the Event name
+  // 1. Fetch invites that actually have an email attached
   const validInvites = await prisma.invitation.findMany({
     where: {
       id: { in: invitationIds },
@@ -22,30 +26,34 @@ export async function SendBulkEmails(params: SendBulkEmailInput) {
     return {
       sentCount: 0,
       failedCount: 0,
-      message: "No valid email addresses found in selected invites.",
+      message: "No valid email addresses found.",
     };
   }
 
-  // 2. Prepare the email promises
-  const emailPromises = validInvites.map((invite) => {
+  // 2. Prepare the email promises (Note: This is now an async map)
+  const emailPromises = validInvites.map(async (invite) => {
+    // Generate the base64 QR Code string for this specific code
+    const qrCodeDataUri = await GenerateQrCodeDataUri(invite.code);
+
     const htmlContent = GenerateInviteEmailHtml(
       invite.inviteeName,
       invite.event.name,
       invite.code,
+      qrCodeDataUri,
+      customHtmlTemplate,
     );
 
     return emailTransporter.sendMail({
       from: `"Event Team" <${process.env.SMTP_USER}>`,
-      to: invite.email!, // We know it's not null because of our Prisma filter
+      to: invite.email!,
       subject: `Your Invite for ${invite.event.name}`,
       html: htmlContent,
     });
   });
 
-  // 3. Send them in parallel (using allSettled to prevent one failure from crashing the rest)
-  const results = await Promise.allSettled(emailPromises);
+  // 3. Send them all in parallel
+  const results = await Promise.allSettled(await Promise.all(emailPromises));
 
-  // 4. Tally up the successes and failures (camelCase variables)
   let sentCount = 0;
   let failedCount = 0;
 
@@ -54,7 +62,7 @@ export async function SendBulkEmails(params: SendBulkEmailInput) {
       sentCount++;
     } else {
       failedCount++;
-      console.error("Failed to send email:", result.reason); // Log for backend debugging
+      console.error("Failed to send email:", result.reason);
     }
   });
 
