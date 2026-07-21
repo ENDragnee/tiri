@@ -1,17 +1,22 @@
-"use clients";
-
-import { templates } from "@/components/cards/CardTemplates.tsx";
-import { useWizard } from "@/lib/wizard-context.tsx";
+"use client";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { templates } from "@/app/events/new/cards/CardTemplates";
+import { useWizard } from "@/lib/wizard-context";
 
 export default function PreviewPage() {
   const router = useRouter();
   const { event, guests, templateId, cardMode } = useWizard();
 
-  if (!event || !templateId) {
-    router.replace("/events/new");
-    return null;
-  }
+  useEffect(
+    function redirectIfNoEvent() {
+      if (!event) router.replace("/events/new");
+    },
+    [event, router],
+  );
+
+  if (!event) return null;
+
   const tpl = templates.find(function match(t) {
     return t.id === templateId;
   });
