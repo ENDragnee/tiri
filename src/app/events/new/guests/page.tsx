@@ -1,17 +1,24 @@
 "use client";
-
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import AddGuestForm from "@/components/forms/AddGuestForm.tsx";
 import ExcelImportButton from "@/components/forms/ExcelImportButton.tsx";
-import { useWizard } from "@/lib/wizard-context.tsx";
-import { useRouter } from "next/navigation";
+import { useWizard } from "@/lib/wizard-context";
 
 export default function GuestsPage() {
   const router = useRouter();
   const { event, guests, removeGuest } = useWizard();
+  console.log("GuestsPage render - guests: ", guests)
+  useEffect(function redirectIfNoEvent(){
   if (!event) {
     router.replace("/events/new");
+  }
+  }, [event, router])
+
+  if(!event){
     return null;
   }
+
   return (
     <main className="min-h-screen px-6 py-16 flex flex-col gap-8 max-w-3xl mx-auto">
       <div>

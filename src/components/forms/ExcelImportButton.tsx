@@ -2,15 +2,27 @@
 
 import React, { useRef, useState } from "react";
 import { read, utils } from "xlsx";
-import { WizardGuest } from "@/types/props.types.ts";
-import { useWizard } from "@/lib/wizard-context.tsx";
+import { guestRowSchema } from "@/lib/schemas/guest.schema.ts";
+import { useWizard, type WizardGuest } from "@/lib/wizard-context";
 
 interface RawRow {
   Name?: string;
   Email?: string;
   Phone?: string;
 }
-
+function toGuest(row: {
+  Name: string;
+  Email?: string;
+  Phone?: string;
+}): WizardGuest {
+  return {
+    id: crypto.randomUUID(),
+    name: row.Name,
+    email: row.Email || undefined,
+    phone: row.Phone || undefined,
+    source: "excel",
+  };
+}
 export default function ExcelImportButton() {
   const { addGuests } = useWizard();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -25,23 +37,19 @@ export default function ExcelImportButton() {
       const buffer = await file.arrayBuffer();
       const workBook = read(buffer);
       const firstSheet = workBook.Sheets[workBook.SheetNames[0]];
-      const rows = utils.sheet_to_join<RawRow>(firstSheet);
+      const rows = utils.sheet_to_json<RawRow>(firstSheet);
 
-      const guests: WizardGuest[] = rows
-        .filter(function hasName(
-          row: RawRow,
-        ): row is RawRow & { Name: string } {
-          return Boolean(row.Name && row.Name.trim());
-        })
-        .map(function toGuest(row: RawRow): WizardGuest {
-          return {
-            id: crypto.randomUUID(),
-            name: row.Name!.trim(),
-            email: row.Email?.trim() || undefined,
-            phone: row.Phone?.trim() || undefined,
-            source: "excel" as const,
-          };
-        });
+      const guests: WizardGuest[] = [];
+      let skipped = 0;
+
+      for (const row of rows) {
+        const result = guestRowSchema.safeParse(row);
+        if (!result.success) {
+          skipped++;
+          continue;
+        }
+        guests.push(toGuest(result.data));
+      }
       if (guests.length === 0) {
         setError("No valid rows found  - expected a 'Name' column ");
         return;
