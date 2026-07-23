@@ -28,20 +28,22 @@ export default function PreviewPage() {
   const { Component } = tpl;
 
   async function handleSend() {
+    if (!event) return;
     setSending(true);
     setError("");
 
     const result = await finalizeAndSendAction({
       event,
       guests: guests.map(function toGuestInput(guest) {
-        return { name: guest.name, email: guest.email, phone: guest.phone };
+        return { name: guest.name, email: guest.email, phone: guest.phone};
       }),
       cardMode,
     });
-
     setSending(false);
 
-    if (!result?.data?.success) {
+    const payload = result?.data;
+
+    if (!payload?.success || !payload.data) {
       setError(
         result?.data?.error ?? result?.serverError ?? "Something went wrong sending invitations.",
       );
@@ -49,7 +51,7 @@ export default function PreviewPage() {
     }
 
     sessionStorage.removeItem("tiri-wizard-state");
-    router.push(`/events/${result.data.data.eventId}`);
+    router.push(`/events/${payload.data.eventId}`);
   }
 
   return (

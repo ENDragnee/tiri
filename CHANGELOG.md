@@ -94,7 +94,9 @@ and this project adheres to [Semantic Versioning].
 
 - dashboard page 
 - event summary card in features
-- 
+- preview page
+- invite server action
+- invite server action schema
 
 ### Changed
 
@@ -104,7 +106,7 @@ and this project adheres to [Semantic Versioning].
 
 ### Fixed
 - typo in prisma naming from "inviations" to "invitations".
-
+- fixed syntax issue in the preview page
 ### Security
 
 

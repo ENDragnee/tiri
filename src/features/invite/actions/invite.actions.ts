@@ -8,6 +8,7 @@ import {
   updateInviteSchema,
   sendBulkEmailSchema,
   finalizeAndSendSchema,
+  type createInviteInput,
 } from "../schemas/invite.schema";
 import { CreateInvite } from "../services/create-invite";
 import { GetInvites } from "../services/get-invite";
@@ -114,7 +115,7 @@ export const finalizeAndSendAction = authActionClient
             };
           });
 
-    const validInvites: (typeof rawInvites)[number][] = [];
+    const validInvites: createInviteInput[] = [];
     let skippedCount = 0;
 
     for (const raw of rawInvites) {
